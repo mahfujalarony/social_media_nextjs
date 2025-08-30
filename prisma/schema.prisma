@@ -1,0 +1,126 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DB_URL") // Pooled connection
+
+}
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  bio       String?
+  avatar    String?
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  followers Follow[] @relation("UserFollowers")
+  following Follow[] @relation("UserFollowing")
+
+  posts     Post[]     @relation("UserPosts")
+  comments  Comment[]  @relation("UserComments")
+  likes     Like[]     @relation("UserLikes")
+  stories   Story[]    @relation("UserStories")
+
+  shares        Share[]        @relation("UserShares")
+  notifications Notification[] @relation("UserNotifications")
+  sentMessages     Message[]   @relation("MessageSender")
+  receivedMessages Message[]   @relation("MessageReceiver")
+}
+
+model Like {
+  id        Int   @id @default(autoincrement())
+  user      User  @relation("UserLikes", fields: [userId], references: [id])
+  post      Post  @relation(fields: [postId], references: [id])
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Comment {
+  id        Int   @id @default(autoincrement())
+  content   String
+  user      User  @relation("UserComments", fields: [userId], references: [id])
+  post      Post  @relation(fields: [postId], references: [id])
+  userId    Int
+  postId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Follow {
+  id          Int  @id @default(autoincrement())
+  follower    User @relation("UserFollowing", fields: [followerId], references: [id])
+  following   User @relation("UserFollowers", fields: [followingId], references: [id])
+  followerId  Int
+  followingId Int
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+}
+
+model Post {
+  id        Int      @id @default(autoincrement())
+  content   String
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author    User     @relation("UserPosts", fields: [authorId], references: [id])
+  authorId  Int
+
+  likes     Like[]
+  comments  Comment[]
+  shares    Share[]
+}
+
+model Share {
+  id      Int  @id @default(autoincrement())
+  user    User @relation("UserShares", fields: [userId], references: [id])
+  post    Post @relation(fields: [postId], references: [id])
+  userId  Int
+  postId  Int
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Story {
+  id        Int      @id @default(autoincrement())
+  content   String
+  imageUrl  String?
+  author    User     @relation("UserStories", fields: [authorId], references: [id])
+  authorId  Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  type      String
+  message   String
+  user      User     @relation("UserNotifications", fields: [userId], references: [id])
+  userId    Int
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  content    String
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id])
+  senderId   Int
+  receiverId Int
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now())
+}
